@@ -625,12 +625,19 @@ static void gap_event_handler(esp_gap_ble_cb_event_t event, esp_ble_gap_cb_param
             // Compare names and record signal strength
             // 对比名称并记录信号强度
             if (ble_get_reconnecting()) {
-                // In reconnection mode, compare device addresses
-                // 在重连模式下，比对设备地址
-                if (memcmp(best_addr, r->scan_rst.bda, sizeof(esp_bd_addr_t)) == 0) {
+                // In reconnection mode, compare device addresses or names
+                // 在重连模式下，比对设备地址或名称 (处理 MAC 地址随机化的问题)
+                bool is_mac_match = (memcmp(best_addr, r->scan_rst.bda, sizeof(esp_bd_addr_t)) == 0);
+                bool is_name_match = (strlen(s_remote_device_name) > 0 && adv_name_str && strcmp(s_remote_device_name, adv_name_str) == 0);
+                
+                if (is_mac_match || is_name_match) {
                     s_found_previous_device = true;
-                    best_rssi = r->scan_rst.rssi; // Make sure best_rssi passes the > -128 check
-                    ESP_LOGI(TAG, "Found previous device: %s, RSSI: %d", adv_name_str, r->scan_rst.rssi);
+                    best_rssi = r->scan_rst.rssi; 
+                    // Update best_addr to the NEW MAC address in case it was a name match
+                    memcpy(best_addr, r->scan_rst.bda, sizeof(esp_bd_addr_t));
+                    
+                    ESP_LOGI(TAG, "Found previous device: %s, RSSI: %d (Match by %s)", 
+                        adv_name_str, r->scan_rst.rssi, is_mac_match ? "MAC" : "NAME");
                     // Stop scanning to trigger ESP_GAP_BLE_SCAN_STOP_COMPLETE_EVT immediately
                     esp_ble_gap_stop_scanning();
                 }
