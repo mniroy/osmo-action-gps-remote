@@ -104,6 +104,10 @@ bool is_current_gps_data_valid(void) {
     return false;
 }
 
+GPS_Data_t get_current_gps_data(void) {
+    return GPS_Data;
+}
+
 // Store previous altitude and time for velocity calculation
 // 用于存储前一时刻的高度和时间，用于计算速度
 static double Previous_Altitude = 0.0;
@@ -190,14 +194,17 @@ double Convert_NMEA_To_Degree(const char *nmea, char direction) {
  *                 输入的 GNRMC 语句字符串
  */
 void Parse_GNRMC(char *sentence) {
-    char *token = strtok(sentence, ",");
+    char *token;
+    char *rest = sentence;
     int field = 0;
 
     double temp_latitude = 0.0;
     double temp_longitude = 0.0;
 
-    while (token != NULL) {
+    while ((token = strsep(&rest, ",")) != NULL) {
         field++;
+        if (token[0] == '\0') continue; // Skip empty fields, but keep field counter incremented!
+        
         switch (field) {
             case 2: {
                 // 时间 hhmmss.sss
@@ -207,14 +214,16 @@ void Parse_GNRMC(char *sentence) {
 
                 // 手动解析时间
                 // Manually parse time
-                const char *ptr = token;
-                hour = (ptr[0] - '0') * 10 + (ptr[1] - '0');
-                minute = (ptr[2] - '0') * 10 + (ptr[3] - '0');
-                second = atof(ptr + 4);
+                if (strlen(token) >= 6) {
+                    const char *ptr = token;
+                    hour = (ptr[0] - '0') * 10 + (ptr[1] - '0');
+                    minute = (ptr[2] - '0') * 10 + (ptr[3] - '0');
+                    second = atof(ptr + 4);
 
-                GPS_Data.Hour = hour;
-                GPS_Data.Minute = minute;
-                GPS_Data.Second = second;
+                    GPS_Data.Hour = hour;
+                    GPS_Data.Minute = minute;
+                    GPS_Data.Second = second;
+                }
                 break;
             }
             case 3:
@@ -261,20 +270,21 @@ void Parse_GNRMC(char *sentence) {
 
                 // 手动解析日期
                 // Manually parse date
-                const char *ptr = token;
-                day = (ptr[0] - '0') * 10 + (ptr[1] - '0');
-                month = (ptr[2] - '0') * 10 + (ptr[3] - '0');
-                year = (ptr[4] - '0') * 10 + (ptr[5] - '0');
+                if (strlen(token) >= 6) {
+                    const char *ptr = token;
+                    day = (ptr[0] - '0') * 10 + (ptr[1] - '0');
+                    month = (ptr[2] - '0') * 10 + (ptr[3] - '0');
+                    year = (ptr[4] - '0') * 10 + (ptr[5] - '0');
 
-                GPS_Data.Day = day;
-                GPS_Data.Month = month;
-                GPS_Data.Year = year;
+                    GPS_Data.Day = day;
+                    GPS_Data.Month = month;
+                    GPS_Data.Year = year;
+                }
                 break;
             }
             default:
                 break;
         }
-        token = strtok(NULL, ",");
     }
 
     // 计算向北和向东的速度分量 (米/秒)，节转米/秒
@@ -296,14 +306,17 @@ void Parse_GNRMC(char *sentence) {
  *                 输入的 GNGGA 语句字符串
  */
 void Parse_GNGGA(char *sentence) {
-    char *token = strtok(sentence, ",");
+    char *token;
+    char *rest = sentence;
     int field = 0;
 
     double temp_latitude = 0.0;
     double temp_longitude = 0.0;
 
-    while (token != NULL) {
+    while ((token = strsep(&rest, ",")) != NULL) {
         field++;
+        if (token[0] == '\0') continue; // Skip empty fields
+        
         switch (field) {
             case 1:
                 // $GNGGA
@@ -392,65 +405,10 @@ void Parse_GNGGA(char *sentence) {
             default:
                 break;
         }
-        token = strtok(NULL, ",");
     }
 }
 
-/**
- * @brief 解析 NMEA 缓冲区中的所有语句
- *        Parse all sentences in NMEA buffer
- * 
- * 遍历缓冲区中的每一行，识别并解析 GNRMC 和 GNGGA 语句。
- * Traverse each line in the buffer, identify and parse GNRMC and GNGGA sentences.
- * 
- * @param buffer 包含 NMEA 语句的缓冲区
- *               Buffer containing NMEA sentences
- */
-void Parse_NMEA_Buffer(char *buffer) {
-    init_gps_data();
-
-    char *start = buffer; // 指向字符串的开始
-                          // Points to the start of string
-    char *end = NULL;     // 指向每行的结束位置
-                          // Points to the end of each line
-
-    while ((end = strchr(start, '\n')) != NULL) {
-        size_t line_length = end - start; // 计算每行的长度
-                                          // Calculate length of each line
-
-        if (line_length > 0) {
-            char line[RX_BUF_SIZE] = {0}; // 创建一个临时缓冲区存储单行
-                                          // Create a temporary buffer to store single line
-            strncpy(line, start, line_length); // 将该行拷贝到缓冲区
-                                               // Copy the line to buffer
-            line[line_length] = '\0'; // 确保以空字符结尾
-                                      // Ensure null-terminated string
-
-            // 解析该行
-            // Parse the line
-            if (strncmp(line, "$GNRMC", 6) == 0 || strncmp(line, "$GPRMC", 6) == 0) {
-                Parse_GNRMC(line);
-            } else if (strncmp(line, "$GNGGA", 6) == 0 || strncmp(line, "$GPGGA", 6) == 0) {
-                Parse_GNGGA(line);
-            }
-        }
-
-        start = end + 1; // 移动到下一行的开始
-                         // Move to the start of next line
-    }
-
-    // 处理最后一行（如果没有以换行符结尾）
-    // Process the last line (if not ending with newline)
-    if (*start != '\0') {
-        if (strncmp(start, "$GNRMC", 6) == 0 || strncmp(start, "$GPRMC", 6) == 0) {
-            Parse_GNRMC(start);
-        } else if (strncmp(start, "$GNGGA", 6) == 0 || strncmp(start, "$GPGGA", 6) == 0) {
-            Parse_GNGGA(start);
-        }
-    }
-
-    // 在所有语句解析完成后，更新最终状态和位置数据
-    // After parsing all sentences, update final status and position data
+void Process_Parsed_GPS_Data() {
     if (GPS_Data.RMC_Valid && GPS_Data.GGA_Valid) {
         GPS_Data.Status = 1;
         gps_invalid_count = 0;  // 重置计数器
@@ -460,11 +418,16 @@ void Parse_NMEA_Buffer(char *buffer) {
         GPS_Data.Latitude = (GPS_Data.RMC_Latitude + GPS_Data.GGA_Latitude) / 2.0;
         GPS_Data.Longitude = (GPS_Data.RMC_Longitude + GPS_Data.GGA_Longitude) / 2.0;
 
+        // 初始化前一时刻的经纬度
+        if (Previous_Latitude == 0.0 && Previous_Longitude == 0.0) {
+            Previous_Latitude = GPS_Data.Latitude;
+            Previous_Longitude = GPS_Data.Longitude;
+        }
+
         // 与前一时刻的纬度和经度做对比
         // Compare with previous latitude and longitude
         if (fabs(GPS_Data.Latitude - Previous_Latitude) > 0.009 || fabs(GPS_Data.Longitude - Previous_Longitude) > 0.0127) {
-            // 超过阈值，剔除异常值并更新前一时刻经纬度
-            // If the change exceeds threshold, set status to 0 and update the previous latitude and longitude
+            // 超过阈值，认为定位异常
             GPS_Data.Status = 0;
         }
 
@@ -475,7 +438,6 @@ void Parse_NMEA_Buffer(char *buffer) {
     } else {
         GPS_Data.Status = 0;
         if (gps_invalid_count < UINT8_MAX) {  // 防止溢出
-                                              // Prevent overflow
             gps_invalid_count++;
         }
     }
@@ -540,18 +502,6 @@ void gps_push_data() {
     // Number of satellites
     uint32_t satellite_number = GPS_Data.Num_Satellites;
 
-    // 打印数据
-    // ESP_LOGI(TAG, "GPS Data:");
-    // ESP_LOGI(TAG, "  YearMonthDay (uint32_t): %lu", (unsigned long)year_month_day);
-    // ESP_LOGI(TAG, "  HourMinuteSecond (uint32_t, UTC+8): %lu", (unsigned long)hour_minute_second);
-    // ESP_LOGI(TAG, "  Longitude (uint32_t, scaled): %lu", (unsigned long)gps_longitude);
-    // ESP_LOGI(TAG, "  Latitude (uint32_t, scaled): %lu", (unsigned long)gps_latitude);
-    // ESP_LOGI(TAG, "  Height (uint32_t, mm): %lu", (unsigned long)height);
-    // ESP_LOGI(TAG, "  Speed to North (float, cm/s): %.2f", speed_to_north);
-    // ESP_LOGI(TAG, "  Speed to East (float, cm/s): %.2f", speed_to_east);
-    // ESP_LOGI(TAG, "  Speed to Downward (float, cm/s): %.2f", speed_to_wnward);
-    // ESP_LOGI(TAG, "  Satellite Number (uint32_t): %lu", (unsigned long)satellite_number);
-
     // 创建 GPS 数据帧
     // Create GPS data frame
     gps_data_push_command_frame gps_frame = {
@@ -581,6 +531,77 @@ void gps_push_data() {
 }
 
 /**
+ * @brief 发送 UBX 命令
+ *        Send UBX command
+ */
+static void send_ubx_cmd(uint8_t msg_class, uint8_t msg_id, const uint8_t *payload, uint16_t len) {
+    uint8_t header[6] = {
+        0xB5, 0x62, 
+        msg_class, msg_id, 
+        (uint8_t)(len & 0xFF), (uint8_t)(len >> 8)
+    };
+    uint8_t ck_a = 0, ck_b = 0;
+    for (int i = 2; i < 6; i++) {
+        ck_a += header[i];
+        ck_b += ck_a;
+    }
+    for (int i = 0; i < len; i++) {
+        ck_a += payload[i];
+        ck_b += ck_a;
+    }
+    uint8_t tail[2] = {ck_a, ck_b};
+    
+    uart_write_bytes(UART_GPS_PORT, (const char*)header, 6);
+    if (len > 0) {
+        uart_write_bytes(UART_GPS_PORT, (const char*)payload, len);
+    }
+    uart_write_bytes(UART_GPS_PORT, (const char*)tail, 2);
+}
+
+/**
+ * @brief 配置 GPS 模块 (波特率 115200 和 10Hz 刷新率)
+ *        Configure GPS module (Baud 115200, 10Hz)
+ */
+static void configure_gps_module() {
+    ESP_LOGI(TAG, "Configuring GPS Module to 115200 baud and 10Hz...");
+
+    // Send 115200 baud command at current baud (assuming 9600 default)
+    uint8_t cfg_prt_payload[20] = {
+        0x01, 0x00, 0x00, 0x00, 
+        0xD0, 0x08, 0x00, 0x00, 
+        0x00, 0xC2, 0x01, 0x00, // 115200 = 0x0001C200
+        0x07, 0x00, 
+        0x03, 0x00, 
+        0x00, 0x00, 
+        0x00, 0x00
+    };
+    send_ubx_cmd(0x06, 0x00, cfg_prt_payload, 20);
+
+    // Wait for the message to be transmitted completely
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Reconfigure ESP32 UART to 115200
+    uart_set_baudrate(UART_GPS_PORT, 115200);
+    uart_flush(UART_GPS_PORT);
+    vTaskDelay(pdMS_TO_TICKS(100));
+
+    // Send the baud command again at 115200 just in case the module was already at 115200
+    send_ubx_cmd(0x06, 0x00, cfg_prt_payload, 20);
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    // Now configure 10Hz update rate
+    uint8_t cfg_rate_payload[6] = {
+        0x64, 0x00, // measRate = 100 ms (10Hz)
+        0x01, 0x00, // navRate = 1
+        0x01, 0x00  // timeRef = 1 (GPS)
+    };
+    send_ubx_cmd(0x06, 0x08, cfg_rate_payload, 6);
+    vTaskDelay(pdMS_TO_TICKS(50));
+
+    ESP_LOGI(TAG, "GPS Module configured for 10Hz!");
+}
+
+/**
  * @brief 初始化 GPS UART
  *        Initialize GPS UART
  * 
@@ -589,8 +610,8 @@ void gps_push_data() {
  */
 static void initUartGps(void)
 {
-    // NEO-M8M default baud rate is 9600
-    // NEO-M8M 默认波特率是 9600
+    // 初始以 9600 波特率连接，然后发送命令切换到 115200
+    // Initially connect at 9600, then send UBX to switch to 115200
     const uart_config_t uart_config = {
         .baud_rate = 9600,
         .data_bits = UART_DATA_8_BITS,
@@ -602,62 +623,77 @@ static void initUartGps(void)
     uart_driver_install(UART_GPS_PORT, RX_BUF_SIZE * 2, 0, 0, NULL, 0);
     uart_param_config(UART_GPS_PORT, &uart_config);
     uart_set_pin(UART_GPS_PORT, UART_GPS_TXD_PIN, UART_GPS_RXD_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
+
+    // 自动配置 GPS 模块
+    // Automatically configure GPS module
+    configure_gps_module();
 }
 
 /**
  * @brief GPS 数据接收任务
  *        GPS data receiving task
  * 
- * 从 GPS UART 端口读取数据，解析并处理 NMEA 数据。
- * Read data from GPS UART port, parse and process NMEA data.
+ * 从 GPS UART 端口读取数据，按行缓冲并解析 NMEA 数据。
+ * Read data from GPS UART port, buffer line-by-line and parse NMEA data.
  * 
  * @param arg 任务参数
- *            Task parameters
  */
 static void rx_task_GPS(void *arg)
 {
     static const char *RX_TASK_TAG = "RX_TASK_GPS";
-    uint8_t* data = (uint8_t*) malloc(RX_BUF_SIZE + 1);
+    uint8_t data[128];
+    char line_buffer[256];
+    int line_pos = 0;
+
+    init_gps_data();
 
     while (1) {
-        const int rxBytes = uart_read_bytes(UART_GPS_PORT, data, RX_BUF_SIZE, 20 / portTICK_PERIOD_MS);
+        const int rxBytes = uart_read_bytes(UART_GPS_PORT, data, sizeof(data), 20 / portTICK_PERIOD_MS);
         if (rxBytes > 0) {
             // 给看门狗喂狗的机会
             // Give watchdog a chance to reset
             vTaskDelay(pdMS_TO_TICKS(5));
 
-            data[rxBytes] = '\0';
+            // Process byte by byte to extract complete lines
+            for (int i = 0; i < rxBytes; i++) {
+                char c = (char)data[i];
+                if (c == '\n') {
+                    line_buffer[line_pos] = '\0';
+                    
+                    // A complete line has been received, parse it
+                    if (strncmp(line_buffer, "$GNRMC", 6) == 0 || strncmp(line_buffer, "$GPRMC", 6) == 0) {
+                        Parse_GNRMC(line_buffer);
+                    } else if (strncmp(line_buffer, "$GNGGA", 6) == 0 || strncmp(line_buffer, "$GPGGA", 6) == 0) {
+                        Parse_GNGGA(line_buffer);
+                        // Typically GGA comes after RMC in a 1Hz burst, so process state here
+                        Process_Parsed_GPS_Data();
+                    }
 
-            // ESP_LOGI(RX_TASK_TAG, "Read %d bytes: '%s'", rxBytes, data);
+                    line_pos = 0; // Reset line buffer for next line
+                } else if (c != '\r') {
+                    if (line_pos < sizeof(line_buffer) - 1) {
+                        line_buffer[line_pos++] = c;
+                    }
+                }
+            }
 
-            // 将读取到的数据存储到全局缓冲区 buff_t 中
-            // Store the read data into global buffer buff_t
-            memcpy(buff_t, data, rxBytes);
-            buff_t[rxBytes] = '\0'; // 确保缓冲区结束
-                                    // Ensure buffer termination
-
-            // 解析数据
-            // Parse data
-            Parse_NMEA_Buffer(buff_t);
-
-            // 给看门狗喂狗的机会
-            // Give watchdog a chance to reset
-            vTaskDelay(pdMS_TO_TICKS(5));
-
-            // 打印解析后的GPS数据
-            // Print parsed GPS data
-            // print_gps_data();
+            static uint32_t log_counter = 0;
+            if (log_counter++ % 20 == 0) { 
+                if (is_current_gps_data_valid()) {
+                    print_gps_data();
+                } else {
+                    ESP_LOGI(RX_TASK_TAG, "GPS is NOT locked yet. Searching for satellites...");
+                }
+            }
 
             if(connect_logic_get_state() == PROTOCOL_CONNECTED && is_current_gps_data_valid()){
                 gps_push_data();
-
             }
         }
         // 如果没有数据读取，休眠一小段时间，避免任务占用 CPU
         // If no data is read, sleep for a short time to avoid CPU occupation
         vTaskDelay(pdMS_TO_TICKS(10));
     }
-    free(data);
 }
 
 /**
@@ -668,23 +704,14 @@ static void rx_task_GPS(void *arg)
  * Initialize GPS UART and related tasks to periodically receive GPS data.
  */
 void initSendGpsDataToCameraTask(void) {
-    initUartGps();
-    // Send UBX-CFG-RATE to set 10Hz update rate on NEO-M8M
-    // UBX-CFG-RATE: 0xB5 0x62 header, class 0x06, ID 0x08,
-    // payload: measRate=100ms (0x64 0x00), navRate=1 (0x01 0x00), timeRef=1 GPS (0x01 0x00)
-    // Checksum: 0x6A 0x00
-    uint8_t ubx_set_10hz[] = {
-        0xB5, 0x62,   // header
-        0x06, 0x08,   // class: CFG, ID: RATE
-        0x06, 0x00,   // length: 6 bytes
-        0x64, 0x00,   // measRate = 100 ms (10 Hz)
-        0x01, 0x00,   // navRate  = 1
-        0x01, 0x00,   // timeRef  = 1 (GPS time)
-        0x7A, 0x12    // CK_A, CK_B
-    };
-    uart_write_bytes(UART_GPS_PORT, (const char*)ubx_set_10hz, sizeof(ubx_set_10hz));
-    ESP_LOGI(TAG, "GPS UART init on port %d, TX:GPIO17, RX:GPIO16, 9600 baud, 10Hz rate command sent", UART_GPS_PORT);
+    initUartGps(); // Starts at 9600 baud
     
+    // We will intentionally NOT change the baudrate or update rate yet.
+    // Let's run it at the default 9600 baud, 1Hz rate.
+    // This will prove if the module can get a lock without being overloaded
+    // or suffering from a baudrate mismatch.
+    ESP_LOGI(TAG, "GPS UART started at default 9600 baud, 1Hz. Waiting for lock...");
+
     xTaskCreate(rx_task_GPS, "uart_rx_task_GPS", 1024 * 4, NULL, 0, NULL);
     ESP_LOGI(TAG, "uart_rx_task_GPS running\n");
 }

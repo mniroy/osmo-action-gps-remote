@@ -25,6 +25,7 @@
 #include "light_logic.h"
 #include "data.h"
 #include "status_logic.h"
+#include "web_logic.h"
 
 /**
  * @brief Main application function, performs initialization and task loop
@@ -39,6 +40,9 @@
 void app_main(void) {
 
     int res = 0;
+
+    /* Initialize Web Server and Wi-Fi AP */
+    web_logic_init();
 
     /* Initialize status/LED logger */
     res = init_light_logic();
