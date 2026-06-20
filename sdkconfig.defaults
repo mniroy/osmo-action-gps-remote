@@ -1,0 +1,20 @@
+# ESP-IDF Project Minimal Configuration for Osmo GPS Remote
+# Target: ESP32-C6
+
+# Bluetooth - required for DJI R SDK BLE communication
+CONFIG_BT_ENABLED=y
+CONFIG_BT_BLE_50_FEATURES_SUPPORTED=n
+CONFIG_BT_BLE_42_FEATURES_SUPPORTED=y
+
+# BT stack: use Bluedroid (required by ble.c)
+CONFIG_BT_BLUEDROID_ENABLED=y
+CONFIG_BT_CLASSIC_ENABLED=n
+
+# UART - use standard UART driver (not LP UART)
+CONFIG_UART_ISR_IN_IRAM=n
+
+# Partition table
+CONFIG_PARTITION_TABLE_SINGLE_APP=y
+
+# Log level
+CONFIG_LOG_DEFAULT_LEVEL_INFO=y
