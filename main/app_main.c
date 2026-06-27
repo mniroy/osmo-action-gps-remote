@@ -26,6 +26,7 @@
 #include "data.h"
 #include "status_logic.h"
 #include "web_logic.h"
+#include "oled_logic.h"
 
 /**
  * @brief Main application function, performs initialization and task loop
@@ -43,6 +44,9 @@ void app_main(void) {
 
     /* Initialize Web Server and Wi-Fi AP */
     web_logic_init();
+
+    /* Initialize OLED display to show boot status immediately */
+    oled_logic_init();
 
     /* Initialize status/LED logger */
     res = init_light_logic();

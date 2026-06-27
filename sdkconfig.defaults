@@ -23,3 +23,6 @@ CONFIG_ESPTOOLPY_FLASHSIZE_4MB=y
 
 # Log level
 CONFIG_LOG_DEFAULT_LEVEL_INFO=y
+
+# RMT driver — required for WS2812B via led_strip component
+CONFIG_SOC_RMT_SUPPORTED=y

@@ -1,71 +1,78 @@
 /* SPDX-License-Identifier: MIT */
-/*
- * Copyright (C) 2025 SZ DJI Technology Co., Ltd.
- *
- * light_logic.c — Stub implementation for ESP32-C6 Super Mini
- *
- * The Super Mini has no onboard RGB LED. LED state is reported via
- * serial log only. No WS2812 / RMT / led_strip dependency.
- *
- * To add a real LED later, wire an LED+resistor to a free GPIO and
- * replace the ESP_LOGI calls with gpio_set_level() calls.
- */
-
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
-
+#include "led_strip.h"
 #include "connect_logic.h"
 #include "status_logic.h"
 #include "gps_logic.h"
+#include "driver/gpio.h"
 
 #define TAG "LOGIC_LIGHT"
 
-/* State colors (for log readability) */
-static const char* state_color_name(connect_state_t state, bool gps_valid) {
-    switch (state) {
-        case BLE_INIT_COMPLETE:
-            return "YELLOW (BLE ready, waiting for long-press to connect)";
-        case BLE_SEARCHING:
-            return "BLUE-BLINK (scanning for Osmo camera)";
-        case BLE_CONNECTED:
-            return "BLUE (BLE connected)";
-        case PROTOCOL_CONNECTED:
-            return gps_valid ? "PURPLE (protocol connected + GPS fix)" : "GREEN (protocol connected)";
-        default:
-            return "RED (initializing)";
-    }
+#define LED_STRIP_GPIO GPIO_NUM_8
+#define LED_STRIP_MAX_LEDS 1
+
+static led_strip_handle_t led_strip;
+
+static void configure_led(void)
+{
+    ESP_LOGI(TAG, "Example configured to blink addressable LED!");
+    /* LED strip initialization with the GPIO and pixels number*/
+    led_strip_config_t strip_config = {
+        .strip_gpio_num = LED_STRIP_GPIO,
+        .max_leds = LED_STRIP_MAX_LEDS,
+        .led_model = LED_MODEL_WS2812,
+        .flags.invert_out = false,
+    };
+    led_strip_rmt_config_t rmt_config = {
+        .resolution_hz = 10 * 1000 * 1000, // 10MHz
+        .flags.with_dma = false,
+    };
+    ESP_ERROR_CHECK(led_strip_new_rmt_device(&strip_config, &rmt_config, &led_strip));
+    led_strip_clear(led_strip);
 }
 
-/**
- * @brief Light monitor task — logs current state periodically
- */
 static void light_monitor_task(void *arg) {
-    connect_state_t last_state = -1;
-    bool last_gps = false;
-
+    bool led_on = true;
     while (1) {
         connect_state_t state = connect_logic_get_state();
         bool gps = is_current_gps_data_valid();
+        bool is_recording = is_camera_recording();
 
-        if (state != last_state || gps != last_gps) {
-            last_state = state;
-            last_gps = gps;
-            ESP_LOGI(TAG, "[STATUS] %s", state_color_name(state, gps));
+        if (state < PROTOCOL_CONNECTED) {
+            // Not connected
+            led_strip_clear(led_strip);
+        } else {
+            // Connected
+            uint8_t r = 0, g = 0, b = 0;
+            if (gps) {
+                // Green: Connected with GPS
+                r = 0; g = 50; b = 0;
+            } else {
+                // Blue: Connected, no GPS
+                r = 0; g = 0; b = 50;
+            }
+
+            if (is_recording) {
+                if (led_on) {
+                    led_strip_set_pixel(led_strip, 0, r, g, b);
+                    led_strip_refresh(led_strip);
+                } else {
+                    led_strip_clear(led_strip);
+                }
+                led_on = !led_on;
+            } else {
+                led_strip_set_pixel(led_strip, 0, r, g, b);
+                led_strip_refresh(led_strip);
+            }
         }
-
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
 
-/**
- * @brief Initialize light logic (stub — no hardware LED)
- * @return 0 on success
- */
 int init_light_logic(void) {
-    ESP_LOGI(TAG, "Light logic init (stub — no LED hardware on Super Mini)");
-    ESP_LOGI(TAG, "State changes will be reported via serial log");
-
+    configure_led();
     xTaskCreate(light_monitor_task, "light_monitor", 2048, NULL, 1, NULL);
     return 0;
 }

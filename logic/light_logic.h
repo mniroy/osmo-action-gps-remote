@@ -1,9 +1,15 @@
 /* SPDX-License-Identifier: MIT */
 /*
- * Copyright (C) 2025 SZ DJI Technology Co., Ltd.
+ * light_logic.h — WS2812B RGB status LED driver for ESP32-C6 Super Mini
  *
- * light_logic.h — Stub for ESP32-C6 Super Mini (no onboard RGB LED)
- * All LED state changes are reported via ESP_LOGI only.
+ * LED State:
+ *   Scanning / not connected  : dim red pulse
+ *   BLE connected, no GPS     : blue solid
+ *   BLE connected, GPS fixed  : green solid
+ *   Recording, no GPS         : blue blink 500ms
+ *   Recording, GPS fixed      : green blink 500ms
+ *
+ * Hardware: WS2812B DIN -> GPIO 8 (via 330Ω series resistor)
  */
 
 #ifndef LIGHT_LOGIC_H
