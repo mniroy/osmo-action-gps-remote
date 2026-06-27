@@ -32,8 +32,8 @@
 // UART 配置 — GY-GPSV3-NEO-M8M in ESP32-C6 Super Mini
 //   GPS module TX -> ESP GPIO 2 (RX)
 //   GPS module RX -> ESP GPIO 3 (TX)
-#define UART_GPS_TXD_PIN (GPIO_NUM_3)
-#define UART_GPS_RXD_PIN (GPIO_NUM_2)
+#define UART_GPS_TXD_PIN (GPIO_NUM_2)
+#define UART_GPS_RXD_PIN (GPIO_NUM_3)
 #define UART_GPS_PORT    UART_NUM_1
 #define RX_BUF_SIZE 800
 
