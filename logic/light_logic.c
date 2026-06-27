@@ -37,12 +37,20 @@ static void light_monitor_task(void *arg) {
     bool led_on = true;
     while (1) {
         connect_state_t state = connect_logic_get_state();
-        bool gps = is_current_gps_data_valid();
+        bool gps = is_current_gps_data_valid_ui();
         bool is_recording = is_camera_recording();
-
         if (state < PROTOCOL_CONNECTED) {
-            // Not connected
-            led_strip_clear(led_strip);
+            // Not connected: pulse based on GPS state
+            if (led_on) {
+                if (gps) {
+                    led_strip_set_pixel(led_strip, 0, 0, 50, 0); // Green pulse (GPS fixed)
+                } else {
+                    led_strip_set_pixel(led_strip, 0, 10, 0, 0); // Dim red pulse (No GPS)
+                }
+                led_strip_refresh(led_strip);
+            } else {
+                led_strip_clear(led_strip);
+            }
         } else {
             // Connected
             uint8_t r = 0, g = 0, b = 0;
@@ -61,12 +69,13 @@ static void light_monitor_task(void *arg) {
                 } else {
                     led_strip_clear(led_strip);
                 }
-                led_on = !led_on;
             } else {
                 led_strip_set_pixel(led_strip, 0, r, g, b);
                 led_strip_refresh(led_strip);
             }
         }
+        
+        led_on = !led_on; // Toggle state every 500ms
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }

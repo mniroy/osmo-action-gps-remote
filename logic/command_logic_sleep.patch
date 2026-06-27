@@ -1,0 +1,41 @@
+--- logic/command_logic.c
++++ logic/command_logic.c
+@@ -467,6 +467,41 @@
+     return response;
+ }
+ 
++key_report_response_frame_t* command_logic_key_report_power(void) {
++    ESP_LOGI(TAG, "%s: Reporting key press for power/sleep", __FUNCTION__);
++
++    if (connect_logic_get_state() != PROTOCOL_CONNECTED) {
++        ESP_LOGE(TAG, "Protocol connection to the camera failed.");
++        return NULL;
++    }
++
++    uint16_t seq = generate_seq();
++
++    key_report_command_frame_t command_frame = {
++        .key_code = 0x01,          // Power key
++        .mode = 0x01,              // Fixed as 0x01
++        .key_value = 0x00,         // Short press event
++    };
++
++    CommandResult result = send_command(
++        0x00,
++        0x11,
++        CMD_RESPONSE_OR_NOT,
++        &command_frame,
++        seq,
++        5000
++    );
++
++    if (result.structure == NULL) {
++        ESP_LOGE(TAG, "Failed to send command or receive response");
++        return NULL;
++    }
++
++    key_report_response_frame_t *response = (key_report_response_frame_t *)result.structure;
++    return response;
++}
++
+ key_report_response_frame_t* command_logic_key_report_snapshot(void) {

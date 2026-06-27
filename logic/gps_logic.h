@@ -104,7 +104,12 @@ void initSendGpsDataToCameraTask(void);
 
 bool is_gps_found(void);
 
+// Check if current GPS data is valid
+// 检查当前 GPS 数据是否有效
 bool is_current_gps_data_valid(void);
+
+// Check if GPS is valid with a debounce for UI so it doesn't flicker
+bool is_current_gps_data_valid_ui(void);
 
 GPS_Data_t get_current_gps_data(void);
 

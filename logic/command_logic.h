@@ -55,6 +55,8 @@ gps_data_push_response_frame* command_logic_push_gps_data(const gps_data_push_co
 
 key_report_response_frame_t* command_logic_key_report_qs(void);
 
+key_report_response_frame_t* command_logic_key_report_power(void);
+
 key_report_response_frame_t* command_logic_key_report_snapshot(void);
 
 #endif

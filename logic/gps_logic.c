@@ -97,8 +97,24 @@ bool is_gps_found(void) {
  * @return bool Returns true if GPS status is valid, false otherwise
  *              如果 GPS 状态为有效，返回 true；否则返回 false
  */
+#include "esp_timer.h"
+
+static uint64_t last_valid_gps_time_us = 0;
+
 bool is_current_gps_data_valid(void) {
     if (GPS_Data.Status == 1) {
+        return true;
+    }
+    return false;
+}
+
+bool is_current_gps_data_valid_ui(void) {
+    if (GPS_Data.Status == 1) {
+        last_valid_gps_time_us = esp_timer_get_time();
+        return true;
+    }
+    // 4 second debounce for UI
+    if ((esp_timer_get_time() - last_valid_gps_time_us) < 4000000ULL) {
         return true;
     }
     return false;

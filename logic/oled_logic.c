@@ -1,6 +1,6 @@
 #include "oled_logic.h"
 #include "oled_font.h"
-#include "driver/spi_master.h"
+#include "driver/i2c.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "esp_log.h"
@@ -14,7 +14,7 @@
 
 #define TAG "OLED"
 
-static spi_device_handle_t spi;
+#define I2C_PORT I2C_NUM_0
 static uint8_t oled_buffer[OLED_WIDTH * OLED_HEIGHT / 8];
 
 // ---------------------------------------------------------------------------
@@ -22,22 +22,18 @@ static uint8_t oled_buffer[OLED_WIDTH * OLED_HEIGHT / 8];
 // ---------------------------------------------------------------------------
 
 static void oled_send_cmd(uint8_t cmd) {
-    spi_transaction_t t;
-    memset(&t, 0, sizeof(t));
-    t.length = 8;
-    t.tx_buffer = &cmd;
-    gpio_set_level(OLED_PIN_DC, 0); // DC LOW = command
-    ESP_ERROR_CHECK(spi_device_polling_transmit(spi, &t));
+    uint8_t buf[2] = {0x00, cmd}; // 0x00 = Command
+    i2c_master_write_to_device(I2C_PORT, OLED_I2C_ADDR, buf, 2, pdMS_TO_TICKS(100));
 }
 
 static void oled_send_data(const uint8_t *data, int len) {
     if (len == 0) return;
-    spi_transaction_t t;
-    memset(&t, 0, sizeof(t));
-    t.length = len * 8;
-    t.tx_buffer = data;
-    gpio_set_level(OLED_PIN_DC, 1); // DC HIGH = data
-    ESP_ERROR_CHECK(spi_device_polling_transmit(spi, &t));
+    uint8_t *buf = malloc(len + 1);
+    if (!buf) return;
+    buf[0] = 0x40; // 0x40 = Data
+    memcpy(buf + 1, data, len);
+    i2c_master_write_to_device(I2C_PORT, OLED_I2C_ADDR, buf, len + 1, pdMS_TO_TICKS(100));
+    free(buf);
 }
 
 // ---------------------------------------------------------------------------
@@ -58,17 +54,80 @@ void oled_update(void) {
 }
 
 void oled_draw_string(int x, int y_page, const char *str) {
-    if (y_page > 7) return;
     while (*str) {
-        if (x >= OLED_WIDTH - 5) break;
-        char c = *str;
+        if (x > OLED_WIDTH - 5) break;
+        char c = *str++;
         if (c < 32 || c > 126) c = 32;
         int font_idx = (c - 32) * 5;
         for (int i = 0; i < 5; i++) {
             oled_buffer[y_page * OLED_WIDTH + x + i] = font5x7[font_idx + i];
         }
         x += 6;
-        str++;
+    }
+}
+
+void oled_draw_string_x2(int x, int y_page, const char *str) {
+    while (*str) {
+        if (x > OLED_WIDTH - 10) break;
+        char c = *str++;
+        if (c < 32 || c > 126) c = 32;
+        int font_idx = (c - 32) * 5;
+        for (int i = 0; i < 5; i++) {
+            uint8_t col = font5x7[font_idx + i];
+            uint16_t out_col = 0;
+            for(int bit = 0; bit < 7; bit++) {
+                if(col & (1<<bit)) {
+                    out_col |= (3 << (bit*2));
+                }
+            }
+            uint8_t top = out_col & 0xFF;
+            uint8_t bottom = out_col >> 8;
+            
+            if(y_page < 8) oled_buffer[y_page * OLED_WIDTH + x + i*2] = top;
+            if(y_page + 1 < 8) oled_buffer[(y_page+1) * OLED_WIDTH + x + i*2] = bottom;
+            
+            if(y_page < 8) oled_buffer[y_page * OLED_WIDTH + x + i*2 + 1] = top;
+            if(y_page + 1 < 8) oled_buffer[(y_page+1) * OLED_WIDTH + x + i*2 + 1] = bottom;
+        }
+        x += 12; // 10 for char, 2 for spacing
+    }
+}
+
+void oled_draw_string_x3(int x, int y_page, const char *str) {
+    while (*str) {
+        if (x > OLED_WIDTH - 15) break;
+        char c = *str++;
+        if (c < 32 || c > 126) c = 32;
+        int font_idx = (c - 32) * 5;
+        for (int i = 0; i < 5; i++) {
+            uint8_t col = font5x7[font_idx + i];
+            uint32_t out_col = 0;
+            for(int bit = 0; bit < 7; bit++) {
+                if(col & (1<<bit)) {
+                    out_col |= (7 << (bit*3));
+                }
+            }
+            uint8_t p0 = out_col & 0xFF;
+            uint8_t p1 = (out_col >> 8) & 0xFF;
+            uint8_t p2 = (out_col >> 16) & 0xFF;
+            
+            for(int k=0; k<3; k++) {
+                if(y_page < 8) oled_buffer[y_page * OLED_WIDTH + x + i*3 + k] = p0;
+                if(y_page + 1 < 8) oled_buffer[(y_page+1) * OLED_WIDTH + x + i*3 + k] = p1;
+                if(y_page + 2 < 8) oled_buffer[(y_page+2) * OLED_WIDTH + x + i*3 + k] = p2;
+            }
+        }
+        x += 18; // 15 for char, 3 for spacing
+    }
+}
+
+void oled_draw_bitmap(int x, int y_page, int w, int h_pages, const uint8_t *bitmap) {
+    for (int p = 0; p < h_pages; p++) {
+        if (y_page + p > 7) continue;
+        for (int i = 0; i < w; i++) {
+            if (x + i >= OLED_WIDTH) break;
+            oled_buffer[(y_page + p) * OLED_WIDTH + x + i] = bitmap[p * w + i];
+        }
     }
 }
 
@@ -77,40 +136,19 @@ void oled_draw_string(int x, int y_page, const char *str) {
 // ---------------------------------------------------------------------------
 
 static void oled_hardware_init(void) {
-    // Configure DC and RST as outputs
-    gpio_config_t io_conf = {
-        .pin_bit_mask = (1ULL << OLED_PIN_DC) | (1ULL << OLED_PIN_RST),
-        .mode = GPIO_MODE_OUTPUT,
-        .pull_up_en = 0,
-        .pull_down_en = 0,
-        .intr_type = GPIO_INTR_DISABLE
+    i2c_config_t conf = {
+        .mode = I2C_MODE_MASTER,
+        .sda_io_num = OLED_I2C_SDA,
+        .scl_io_num = OLED_I2C_SCL,
+        .sda_pullup_en = GPIO_PULLUP_ENABLE,
+        .scl_pullup_en = GPIO_PULLUP_ENABLE,
+        .master.clk_speed = 400000,
     };
-    gpio_config(&io_conf);
+    i2c_param_config(I2C_PORT, &conf);
+    i2c_driver_install(I2C_PORT, conf.mode, 0, 0, 0);
 
-    spi_bus_config_t buscfg = {
-        .miso_io_num   = -1,
-        .mosi_io_num   = OLED_PIN_MOSI,
-        .sclk_io_num   = OLED_PIN_SCK,
-        .quadwp_io_num = -1,
-        .quadhd_io_num = -1,
-        .max_transfer_sz = 1024
-    };
+    vTaskDelay(pdMS_TO_TICKS(50));
 
-    spi_device_interface_config_t devcfg = {
-        .clock_speed_hz = 1 * 1000 * 1000, // 1 MHz
-        .mode           = 0,
-        .spics_io_num   = OLED_PIN_CS,
-        .queue_size     = 7
-    };
-
-    ESP_ERROR_CHECK(spi_bus_initialize(SPI2_HOST, &buscfg, SPI_DMA_CH_AUTO));
-    ESP_ERROR_CHECK(spi_bus_add_device(SPI2_HOST, &devcfg, &spi));
-
-    // Hardware reset
-    gpio_set_level(OLED_PIN_RST, 0);
-    vTaskDelay(pdMS_TO_TICKS(100));
-    gpio_set_level(OLED_PIN_RST, 1);
-    vTaskDelay(pdMS_TO_TICKS(100));
 
     // Init sequence — compatible with SSD1306 and SH1106
     oled_send_cmd(0xAE); // Display OFF
@@ -154,48 +192,105 @@ static void oled_hardware_init(void) {
 // ---------------------------------------------------------------------------
 
 static void oled_ui_task(void *arg) {
-    char line1[32], line2[32], line3[32], line4[32];
+    char temp_str[32];
 
     while (1) {
         oled_clear();
 
-        // Line 0 — BLE connection + camera mode
         connect_state_t conn = connect_logic_get_state();
-        const char *conn_str = "DISCONN";
-        if      (conn == PROTOCOL_CONNECTED)     conn_str = "CONNECTED";
-        else if (conn >= BLE_INIT_COMPLETE)      conn_str = "SEARCHING";
-
-        const char *mode_str = "N/A";
+        
+        // --- Top Left: SD Card / Mode ---
+        oled_draw_bitmap(0, 0, 16, 2, icon_sd_card);
         if (conn == PROTOCOL_CONNECTED) {
-            if      (current_camera_mode == CAMERA_MODE_NORMAL) mode_str = "VIDEO";
-            else if (current_camera_mode == CAMERA_MODE_PHOTO)  mode_str = "PHOTO";
-        }
-        snprintf(line1, sizeof(line1), "%s | %s", conn_str, mode_str);
-
-        // Line 2 — Camera state
-        if (conn == PROTOCOL_CONNECTED) {
-            snprintf(line2, sizeof(line2),
-                     is_camera_recording() ? "CAM: RECORDING" : "CAM: STANDBY");
+            if (current_camera_mode == 0x05) { // Photo Mode
+                if (current_remain_photo_num >= 1000) {
+                    snprintf(temp_str, sizeof(temp_str), "%luK", (unsigned long)current_remain_photo_num / 1000);
+                } else {
+                    snprintf(temp_str, sizeof(temp_str), "%lu", (unsigned long)current_remain_photo_num);
+                }
+            } else { // Video modes
+                uint32_t mins = current_remain_time / 60;
+                uint32_t hours = mins / 60;
+                mins = mins % 60;
+                if (hours > 0) {
+                    snprintf(temp_str, sizeof(temp_str), "%luh%02lu", (unsigned long)hours, (unsigned long)mins);
+                } else {
+                    snprintf(temp_str, sizeof(temp_str), "%lum", (unsigned long)mins);
+                }
+            }
         } else {
-            snprintf(line2, sizeof(line2), "CAM: OFFLINE");
+            snprintf(temp_str, sizeof(temp_str), "DIS");
         }
+        oled_draw_string(20, 0, temp_str);
 
-        // Lines 4/6/7 — GPS
-        if (is_current_gps_data_valid()) {
-            snprintf(line3, sizeof(line3), "GPS: 3D FIX");
+        // --- Top Right: GPS & Battery ---
+        if (is_current_gps_data_valid_ui()) {
             GPS_Data_t gps = get_current_gps_data();
-            snprintf(line4, sizeof(line4), "Lat:%.4f", gps.Latitude);
-            oled_draw_string(0, 6, line4);
-            snprintf(line4, sizeof(line4), "Lon:%.4f", gps.Longitude);
-            oled_draw_string(0, 7, line4);
+            snprintf(temp_str, sizeof(temp_str), "SAT: %d", gps.Num_Satellites);
+            oled_draw_string(60, 0, temp_str);
         } else {
-            snprintf(line3, sizeof(line3), "GPS: SEARCHING...");
-            oled_draw_string(0, 6, "No Coordinates");
+            oled_draw_string(60, 0, "SAT: --");
         }
 
-        oled_draw_string(0, 0, line1);
-        oled_draw_string(0, 2, line2);
-        oled_draw_string(0, 4, line3);
+        oled_draw_bitmap(112, 0, 16, 2, icon_batt_full);
+
+        // --- Center Display ---
+        if (conn == PROTOCOL_CONNECTED && current_power_mode != 3) {
+            bool is_rec = is_camera_recording();
+            if (is_rec) {
+                // Show Speed big, and Timer small below it
+                GPS_Data_t gps = get_current_gps_data();
+                int speed_kmh = (int)(gps.Speed_knots * 1.852);
+                snprintf(temp_str, sizeof(temp_str), "%d", speed_kmh);
+                
+                int speed_text_len = strlen(temp_str);
+                int speed_width = speed_text_len * 18;
+                int kmh_width = 4 * 6; // "KM/H" length = 4 chars
+                int total_width = speed_width + kmh_width + 4; // Add a small 4px gap
+                
+                int x_pos = (128 - total_width) / 2;
+                
+                // Draw 3x speed
+                oled_draw_string_x3(x_pos, 2, temp_str);
+                
+                // Draw "KM/H" next to it at the bottom alignment (page 2+2=4)
+                oled_draw_string(x_pos + speed_width + 4, 4, "KM/H");
+                
+                uint16_t time = current_record_time;
+                snprintf(temp_str, sizeof(temp_str), "%02d:%02d", time / 60, time % 60);
+                // Center timer text
+                int text_len = strlen(temp_str);
+                x_pos = (128 - (text_len * 6)) / 2;
+                oled_draw_string(x_pos, 6, temp_str);
+            } else {
+                // Show Mode
+                const uint8_t *mode_icon = icon_video;
+                const char *mode_text = "VIDEO";
+                
+                switch(current_camera_mode) {
+                    case 0x00: mode_text = "SLOW MOTION"; break;
+                    case 0x01: mode_text = "VIDEO"; break;
+                    case 0x02: mode_text = "TIMELAPSE"; break;
+                    case 0x05: mode_text = "PHOTO"; mode_icon = icon_photo; break;
+                    case 0x0A: mode_text = "HYPERLAPSE"; break;
+                    case 0x1A: mode_text = "LIVE STREAM"; break;
+                    case 0x23: mode_text = "UVC LIVE"; break;
+                    case 0x28: mode_text = "LOW LIGHT"; break;
+                    default:   mode_text = "UNKNOWN"; break;
+                }
+                
+                oled_draw_bitmap(48, 2, 32, 4, mode_icon);
+                
+                // Center text manually, assume 5x7 font (5 chars = 30px, 7 chars = 42px)
+                int text_len = strlen(mode_text);
+                int x_pos = (128 - (text_len * 6)) / 2; // Center horizontally
+                oled_draw_string(x_pos, 6, mode_text);
+            }
+        } else {
+            // Not connected or in sleep mode
+            oled_draw_bitmap(48, 2, 32, 4, icon_moon);
+            oled_draw_string(24, 6, "WAKE UP CAMERA");
+        }
 
         oled_update();
         vTaskDelay(pdMS_TO_TICKS(500));

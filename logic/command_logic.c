@@ -467,6 +467,44 @@ key_report_response_frame_t* command_logic_key_report_qs(void) {
 }
 
 
+key_report_response_frame_t* command_logic_key_report_power(void) {
+    ESP_LOGI(TAG, "%s: Reporting key press for power/sleep", __FUNCTION__);
+
+    if (connect_logic_get_state() != PROTOCOL_CONNECTED) {
+        ESP_LOGE(TAG, "Protocol connection to the camera failed.");
+        return NULL;
+    }
+
+    uint16_t seq = generate_seq();
+
+    // 1. Send press event
+    key_report_command_frame_t command_frame_press = {
+        .key_code = 0x02,          // Power/QS key
+        .mode = 0x00,              // Press/Release mode
+        .key_value = 0x00,         // Pressed
+    };
+    send_command(0x00, 0x11, CMD_RESPONSE_OR_NOT, &command_frame_press, seq, 1000);
+
+    // 2. Wait 1500ms to emulate long press
+    vTaskDelay(pdMS_TO_TICKS(1500));
+
+    seq = generate_seq();
+    // 3. Send release event
+    key_report_command_frame_t command_frame_release = {
+        .key_code = 0x02,          // Power/QS key
+        .mode = 0x00,              // Press/Release mode
+        .key_value = 0x01,         // Released
+    };
+    CommandResult result = send_command(0x00, 0x11, CMD_RESPONSE_OR_NOT, &command_frame_release, seq, 1000);
+
+    if (result.structure == NULL) {
+        ESP_LOGE(TAG, "Failed to receive response for key release");
+        return NULL;
+    }
+
+    return (key_report_response_frame_t *)result.structure;
+}
+
 key_report_response_frame_t* command_logic_key_report_snapshot(void) {
     ESP_LOGI(TAG, "%s: Reporting key press for snapshot", __FUNCTION__);
 

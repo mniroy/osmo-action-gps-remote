@@ -29,6 +29,11 @@ extern uint8_t current_camera_status;
 extern uint8_t current_video_resolution;
 extern uint8_t current_fps_idx;
 extern uint8_t current_eis_mode;
+extern uint16_t current_record_time;
+extern uint8_t current_power_mode;
+extern uint32_t current_remain_capacity;
+extern uint32_t current_remain_photo_num;
+extern uint32_t current_remain_time;
 extern bool camera_status_initialized;
 
 bool is_camera_recording();

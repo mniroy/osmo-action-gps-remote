@@ -53,8 +53,14 @@ static void handle_btn2_short(void) {
 }
 
 static void handle_btn3_short(void) {
-    ESP_LOGI(TAG, "BTN3 Short Press: Wakeup Camera");
-    connect_logic_ble_wakeup();
+    if (connect_logic_get_state() == PROTOCOL_CONNECTED && current_power_mode != 3) {
+        ESP_LOGI(TAG, "BTN3 Short Press: Sleep Camera");
+        key_report_response_frame_t *resp = command_logic_key_report_power();
+        if (resp) free(resp);
+    } else {
+        ESP_LOGI(TAG, "BTN3 Short Press: Wakeup Camera");
+        connect_logic_ble_wakeup();
+    }
 }
 
 static void key_scan_task(void *arg) {

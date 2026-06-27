@@ -5,7 +5,7 @@
 // We'll use a standard 5x7 font (5 columns, 7 rows, stored as 5 bytes per char, vertically oriented).
 #include <stdint.h>
 
-const uint8_t font5x7[] = {
+static const uint8_t font5x7[] = {
     0x00, 0x00, 0x00, 0x00, 0x00, // 32 ' '
     0x00, 0x00, 0x5f, 0x00, 0x00, // 33 '!'
     0x00, 0x07, 0x00, 0x07, 0x00, // 34 '"'
@@ -102,5 +102,13 @@ const uint8_t font5x7[] = {
     0x00, 0x41, 0x36, 0x08, 0x00, // 125 '}'
     0x02, 0x01, 0x02, 0x04, 0x02  // 126 '~'
 };
+
+extern const uint8_t icon_sd_card[32];
+extern const uint8_t icon_batt_empty[32];
+extern const uint8_t icon_batt_half[32];
+extern const uint8_t icon_batt_full[32];
+extern const uint8_t icon_moon[128];
+extern const uint8_t icon_video[128];
+extern const uint8_t icon_photo[128];
 
 #endif

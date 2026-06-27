@@ -37,6 +37,10 @@ uint8_t current_camera_status = 0;
 uint8_t current_video_resolution = 0;
 uint8_t current_fps_idx = 0;
 uint8_t current_eis_mode = 0;
+uint8_t current_power_mode = 0;
+uint32_t current_remain_capacity = 0;
+uint32_t current_remain_photo_num = 0;
+uint32_t current_remain_time = 0;
 uint8_t current_user_mode = 0;
 uint8_t current_camera_mode_next_flag = 0;
 uint16_t current_record_time = 0;
@@ -223,6 +227,33 @@ void update_camera_state_handler(void *data) {
     if (current_timelapse_interval != parsed_data->timelapse_interval) {
         current_timelapse_interval = parsed_data->timelapse_interval;
         ESP_LOGI(TAG, "Timelapse interval updated to: %d", current_timelapse_interval);
+        state_changed = true;
+    }
+
+    // If status not initialized, mark as initialized
+    // Store power mode
+    if (current_power_mode != parsed_data->power_mode) {
+        current_power_mode = parsed_data->power_mode;
+        ESP_LOGI(TAG, "Power mode updated to: %d", current_power_mode);
+        state_changed = true;
+    }
+    
+    // Store remaining capacity
+    if (current_remain_capacity != parsed_data->remain_capacity) {
+        current_remain_capacity = parsed_data->remain_capacity;
+        ESP_LOGI(TAG, "Remaining capacity updated to: %lu MB", (unsigned long)current_remain_capacity);
+        state_changed = true;
+    }
+    
+    if (current_remain_photo_num != parsed_data->remain_photo_num) {
+        current_remain_photo_num = parsed_data->remain_photo_num;
+        ESP_LOGI(TAG, "Remaining photo updated to: %lu", (unsigned long)current_remain_photo_num);
+        state_changed = true;
+    }
+    
+    if (current_remain_time != parsed_data->remain_time) {
+        current_remain_time = parsed_data->remain_time;
+        ESP_LOGI(TAG, "Remaining time updated to: %lu s", (unsigned long)current_remain_time);
         state_changed = true;
     }
 

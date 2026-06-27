@@ -49,6 +49,9 @@ void app_main(void) {
     /* Initialize OLED display to show boot status immediately */
     oled_logic_init();
 
+    // battery_logic_init();
+
+
     /* Initialize status/LED logger */
     res = init_light_logic();
     if (res != 0) {
