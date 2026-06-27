@@ -5,7 +5,7 @@
 set -e
 
 IDF_PATH="/Users/royyanwicaksono/.platformio/packages/framework-espidf"
-IDF_PYTHON="/Users/royyanwicaksono/.platformio/penv/.espidf-5.5.2/bin/python3"
+IDF_PYTHON="/Users/royyanwicaksono/.platformio/penv/.espidf-6.0.1/bin/python3"
 TOOLCHAIN_BIN="/Users/royyanwicaksono/.platformio/packages/toolchain-riscv32-esp/bin"
 CMAKE_BIN="/Users/royyanwicaksono/.platformio/packages/tool-cmake/bin"
 NINJA_BIN="/Users/royyanwicaksono/.platformio/packages/tool-ninja"
