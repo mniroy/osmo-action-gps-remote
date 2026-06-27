@@ -1,0 +1,7 @@
+=== Osmo GPS Remote — ESP32-C6 Super Mini ===
+IDF_PATH: /Users/royyanwicaksono/.platformio/packages/framework-espidf
+Action: monitor
+
+Executing action: monitor
+Running idf_monitor in directory /Users/royyanwicaksono/Dev/ESP/osmo_action_gps_remote
+Executing "/Users/royyanwicaksono/.platformio/penv/.espidf-6.0.1/bin/python3 /Users/royyanwicaksono/.platformio/packages/framework-espidf/tools/idf_monitor.py -p /dev/cu.usbmodem101 -b 115200 --toolchain-prefix riscv32-esp-elf- --target esp32c6 --revision 0 --decode-panic backtrace /Users/royyanwicaksono/Dev/ESP/osmo_action_gps_remote/build/osmo_action_gps_remote.elf /Users/royyanwicaksono/Dev/ESP/osmo_action_gps_remote/build/bootloader/bootloader.elf -m '/Users/royyanwicaksono/.platformio/penv/.espidf-6.0.1/bin/python3' '/Users/royyanwicaksono/.platformio/packages/framework-espidf/tools/idf.py' '-C' '/Users/royyanwicaksono/Dev/ESP/osmo_action_gps_remote' '-DIDF_TARGET=esp32c6'"...

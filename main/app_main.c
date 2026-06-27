@@ -43,7 +43,8 @@ void app_main(void) {
     int res = 0;
 
     /* Initialize Web Server and Wi-Fi AP */
-    web_logic_init();
+    // NOTE: Wi-Fi and Webserver temporarily disabled to test power brownout hypothesis!
+    // web_logic_init();
 
     /* Initialize OLED display to show boot status immediately */
     oled_logic_init();

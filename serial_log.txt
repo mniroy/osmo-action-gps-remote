@@ -1,0 +1,24 @@
+I (49426) LOGIC_GPS: GPS Data: Time=13:49:19.400, Date=27-06-2026, Lat=-6.192322 S, Lon=106.711156 E, Speed=0.05 knots, Course=0.00 deg, Altitude=38.30 m, Satellites=12, V_North=0.03 m/s, V_East=0.00 m/s, V_Descend=0.25 m/s
+I (49796) LOGIC_GPS: GPS Data: Time=13:49:19.800, Date=27-06-2026, Lat=-6.192322 S, Lon=106.711157 E, Speed=0.10 knots, Course=0.00 deg, Altitude=38.30 m, Satellites=12, V_North=0.05 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (50186) LOGIC_GPS: GPS Data: Time=13:49:20.200, Date=27-06-2026, Lat=-6.192322 S, Lon=106.711157 E, Speed=0.11 knots, Course=0.00 deg, Altitude=38.30 m, Satellites=12, V_North=0.06 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (50376) LOGIC_CONNECT: Auto-reconnect attempt #2 (saved MAC)...
+I (50376) BLE: Attempting to reconnect to previous device: OsmoAction4-Royyan, MAC: 0C:9A:E6:5A:7A:8B
+I (50376) BLE: esp_ble_gap_start_scanning...
+I (50376) LOGIC_CONNECT: Waiting up to 30s for BLE to connect...
+I (50506) RX_TASK_GPS: GPS is NOT locked yet. Searching for satellites...
+I (50726) LOGIC_GPS: GPS Data: Time=13:49:20.800, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711159 E, Speed=0.07 knots, Course=0.00 deg, Altitude=38.20 m, Satellites=11, V_North=0.04 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (50946) LOGIC_GPS: GPS Data: Time=13:49:21.000, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711159 E, Speed=0.07 knots, Course=321.92 deg, Altitude=38.20 m, Satellites=11, V_North=0.03 m/s, V_East=-0.02 m/s, V_Descend=-0.00 m/s
+I (51176) LOGIC_GPS: GPS Data: Time=13:49:21.300, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711160 E, Speed=0.15 knots, Course=321.92 deg, Altitude=38.20 m, Satellites=11, V_North=0.06 m/s, V_East=-0.05 m/s, V_Descend=-0.00 m/s
+I (51406) LOGIC_GPS: GPS Data: Time=13:49:21.500, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711160 E, Speed=0.18 knots, Course=321.92 deg, Altitude=38.20 m, Satellites=11, V_North=0.07 m/s, V_East=-0.06 m/s, V_Descend=-0.00 m/s
+I (51636) LOGIC_GPS: GPS Data: Time=13:49:21.600, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711161 E, Speed=0.22 knots, Course=321.92 deg, Altitude=38.10 m, Satellites=11, V_North=0.09 m/s, V_East=-0.07 m/s, V_Descend=1.00 m/s
+I (51856) LOGIC_GPS: GPS Data: Time=13:49:21.900, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711161 E, Speed=0.28 knots, Course=321.92 deg, Altitude=38.10 m, Satellites=11, V_North=0.11 m/s, V_East=-0.09 m/s, V_Descend=-0.00 m/s
+I (52086) LOGIC_GPS: GPS Data: Time=13:49:22.200, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711161 E, Speed=0.00 knots, Course=0.00 deg, Altitude=38.10 m, Satellites=11, V_North=0.00 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (52326) LOGIC_GPS: GPS Data: Time=13:49:22.300, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711162 E, Speed=0.06 knots, Course=0.00 deg, Altitude=38.00 m, Satellites=11, V_North=0.03 m/s, V_East=0.00 m/s, V_Descend=0.50 m/s
+I (52566) LOGIC_GPS: GPS Data: Time=13:49:22.700, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711162 E, Speed=0.17 knots, Course=0.00 deg, Altitude=38.00 m, Satellites=11, V_North=0.09 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (52786) LOGIC_GPS: GPS Data: Time=13:49:22.900, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711162 E, Speed=0.29 knots, Course=0.00 deg, Altitude=38.00 m, Satellites=11, V_North=0.15 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (53036) LOGIC_GPS: GPS Data: Time=13:49:23.100, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711162 E, Speed=0.09 knots, Course=0.00 deg, Altitude=38.00 m, Satellites=11, V_North=0.04 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (53246) LOGIC_GPS: GPS Data: Time=13:49:23.400, Date=27-06-2026, Lat=-6.192323 S, Lon=106.711163 E, Speed=0.08 knots, Course=0.00 deg, Altitude=37.90 m, Satellites=11, V_North=0.04 m/s, V_East=0.00 m/s, V_Descend=1.00 m/s
+I (53486) LOGIC_GPS: GPS Data: Time=13:49:23.600, Date=27-06-2026, Lat=-6.192324 S, Lon=106.711163 E, Speed=0.10 knots, Course=0.00 deg, Altitude=37.90 m, Satellites=11, V_North=0.05 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (53726) LOGIC_GPS: GPS Data: Time=13:49:23.700, Date=27-06-2026, Lat=-6.192324 S, Lon=106.711163 E, Speed=0.13 knots, Course=0.00 deg, Altitude=37.90 m, Satellites=11, V_North=0.07 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s
+I (53946) LOGIC_GPS: GPS Data: Time=13:49:24.000, Date=27-06-2026, Lat=-6.192324 S, Lon=106.711163 E, Speed=0.09 knots, Course=0.00 deg, Altitude=37.80 m, Satellites=11, V_North=0.05 m/s, V_East=0.00 m/s, V_Descend=1.00 m/s
+I (54206) LOGIC_GPS: GPS Data: Time=13:49:24.300, Date=27-06-2026, Lat=-6.192324 S, Lon=106.711163 E, Speed=0.21 knots, Course=0.00 deg, Altitude=37.80 m, Satellites=11, V_North=0.11 m/s, V_East=0.00 m/s, V_Descend=-0.00 m/s

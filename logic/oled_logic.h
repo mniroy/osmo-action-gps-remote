@@ -7,7 +7,7 @@
 // Hardware pins
 #define OLED_PIN_SCK  GPIO_NUM_6
 #define OLED_PIN_MOSI GPIO_NUM_7
-#define OLED_PIN_DC   GPIO_NUM_5
+#define OLED_PIN_DC   GPIO_NUM_5   // DC on GPIO 5 (confirmed by user)
 #define OLED_PIN_CS   GPIO_NUM_14
 #define OLED_PIN_RST  GPIO_NUM_4
 

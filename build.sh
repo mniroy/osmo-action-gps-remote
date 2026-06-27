@@ -25,4 +25,4 @@ echo ""
 $IDF_PYTHON "$IDF_PATH/tools/idf.py" \
     -C "$SCRIPT_DIR" \
     -DIDF_TARGET=esp32c6 \
-    $ACTION
+    "$@"
