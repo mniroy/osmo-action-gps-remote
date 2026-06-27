@@ -107,6 +107,9 @@ void receive_camera_disconnect_handler() {
  * Strategy:
  *   - Wait 5 s after disconnect (camera may be rebooting)
  *   - Try BLE scan+connect (up to 30 s per attempt)
+ *     • If a saved MAC is in NVS, attempt to reconnect to that device.
+ *     • If no saved MAC (first boot / NVS cleared), do a fresh scan and
+ *       connect to the first DJI camera discovered.
  *   - On BLE success, run protocol handshake
  *   - On protocol success, subscribe and go back to sleep
  *   - On any failure, wait RETRY_INTERVAL_MS and try again
@@ -158,21 +161,41 @@ static void reconnect_task(void *arg) {
             continue;   /* spurious wake, go back to sleep */
         }
 
-        ESP_LOGI(TAG, "Camera disconnected — waiting %d ms before reconnect attempt", REBOOT_GRACE_MS);
-        vTaskDelay(pdMS_TO_TICKS(REBOOT_GRACE_MS));
+        /* Only wait for camera reboot grace period after an unexpected disconnect.
+         * On first boot (no prior pairing) we skip the wait so the scan starts
+         * immediately and the ESP connects as soon as the camera is powered on. */
+        bool has_saved_camera = ble_load_connected_device_from_nvs();
+        if (has_saved_camera) {
+            ESP_LOGI(TAG, "Saved camera found — waiting %d ms grace period before reconnect", REBOOT_GRACE_MS);
+            vTaskDelay(pdMS_TO_TICKS(REBOOT_GRACE_MS));
+        } else {
+            ESP_LOGI(TAG, "No saved camera in NVS — starting fresh scan immediately");
+        }
 
         int attempt = 0;
         while (s_should_auto_reconnect) {
             attempt++;
-            ESP_LOGI(TAG, "Auto-reconnect attempt #%d...", attempt);
 
-            int res = do_full_connect_sequence(true);
+            int res;
+            if (has_saved_camera) {
+                /* Try to reconnect to the previously paired camera first */
+                ESP_LOGI(TAG, "Auto-reconnect attempt #%d (saved MAC)...", attempt);
+                res = do_full_connect_sequence(true);
+
+                if (res == -2) {
+                    /* NVS cleared between attempts — treat as fresh scan */
+                    ESP_LOGW(TAG, "Saved MAC gone, falling back to fresh scan");
+                    has_saved_camera = false;
+                    res = do_full_connect_sequence(false);
+                }
+            } else {
+                /* No saved camera — scan and connect to any DJI camera in range */
+                ESP_LOGI(TAG, "Auto-connect attempt #%d (fresh scan for any DJI camera)...", attempt);
+                res = do_full_connect_sequence(false);
+            }
+
             if (res == 0) {
-                ESP_LOGI(TAG, "Auto-reconnect successful after %d attempt(s)", attempt);
-                s_should_auto_reconnect = false;
-                break;
-            } else if (res == -2) {
-                ESP_LOGI(TAG, "No saved camera found in NVS, stopping auto-reconnect loop until user pairs via long press.");
+                ESP_LOGI(TAG, "Auto-connect successful after %d attempt(s)", attempt);
                 s_should_auto_reconnect = false;
                 break;
             }
