@@ -103,6 +103,7 @@ static const uint8_t font5x7[] = {
     0x02, 0x01, 0x02, 0x04, 0x02  // 126 '~'
 };
 
+extern const uint8_t icon_gps[32];
 extern const uint8_t icon_sd_card[32];
 extern const uint8_t icon_batt_empty[32];
 extern const uint8_t icon_batt_half[32];

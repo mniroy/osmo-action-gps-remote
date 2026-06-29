@@ -226,10 +226,10 @@ static void oled_ui_task(void *arg) {
         // --- Top Right: GPS & Battery ---
         if (is_current_gps_data_valid_ui()) {
             GPS_Data_t gps = get_current_gps_data();
-            snprintf(temp_str, sizeof(temp_str), "SAT: %d", gps.Num_Satellites);
+            snprintf(temp_str, sizeof(temp_str), "GPS: %d", gps.Num_Satellites);
             oled_draw_string(60, 0, temp_str);
         } else {
-            oled_draw_string(60, 0, "SAT: --");
+            oled_draw_string(60, 0, "GPS: --");
         }
 
         oled_draw_bitmap(112, 0, 16, 2, icon_batt_full);

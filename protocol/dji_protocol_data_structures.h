@@ -76,11 +76,11 @@ typedef struct __attribute__((packed)) {
                                    // 纬度 (value = 实际值 * 10^7)
     int32_t height;                // Height in mm
                                    // 高度 单位：mm
-    float speed_to_north;          // Speed to north in cm/s
+    int32_t speed_to_north;        // Speed to north in cm/s
                                    // 向北速度 单位：cm/s
-    float speed_to_east;           // Speed to east in cm/s
+    int32_t speed_to_east;         // Speed to east in cm/s
                                    // 向东速度 单位：cm/s
-    float speed_to_wnward;         // Speed downward in cm/s
+    int32_t speed_to_wnward;       // Speed downward in cm/s
                                    // 向下降速度 单位：cm/s
     uint32_t vertical_accuracy;    // Vertical accuracy estimate in mm
                                    // 垂直精度估计 单位：mm

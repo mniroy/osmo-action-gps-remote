@@ -493,7 +493,7 @@ void gps_push_data() {
     // 时间转换
     // Time conversion
     int32_t year_month_day = (GPS_Data.Year + 2000) * 10000 + GPS_Data.Month * 100 + GPS_Data.Day;
-    int32_t hour_minute_second = (GPS_Data.Hour + 8) * 10000 + GPS_Data.Minute * 100 + (int32_t)GPS_Data.Second;
+    int32_t hour_minute_second = GPS_Data.Hour * 10000 + GPS_Data.Minute * 100 + (int32_t)GPS_Data.Second;
 
     // 经纬度转换
     // Longitude and latitude conversion
@@ -507,11 +507,11 @@ void gps_push_data() {
 
     // 速度转换
     // Speed conversion
-    float speed_to_north = GPS_Data.Velocity_North * 100;    // m/s 转换为 cm/s
+    int32_t speed_to_north = (int32_t)(GPS_Data.Velocity_North * 100);    // m/s 转换为 cm/s
                                                              // Convert m/s to cm/s
-    float speed_to_east = GPS_Data.Velocity_East * 100;      // m/s 转换为 cm/s
+    int32_t speed_to_east = (int32_t)(GPS_Data.Velocity_East * 100);      // m/s 转换为 cm/s
                                                              // Convert m/s to cm/s
-    float speed_to_wnward = GPS_Data.Velocity_Descend * 100; // m/s 转换为 cm/s
+    int32_t speed_to_wnward = (int32_t)(GPS_Data.Velocity_Descend * 100); // m/s 转换为 cm/s
                                                              // Convert m/s to cm/s
 
     // 卫星数量
@@ -683,6 +683,11 @@ static void rx_task_GPS(void *arg)
                         Parse_GNGGA(line_buffer);
                         // Typically GGA comes after RMC in a 1Hz burst, so process state here
                         Process_Parsed_GPS_Data();
+                        
+                        // Push to camera once per GPS cycle
+                        if(connect_logic_get_state() == PROTOCOL_CONNECTED && is_current_gps_data_valid()){
+                            gps_push_data();
+                        }
                     }
 
                     line_pos = 0; // Reset line buffer for next line
@@ -700,10 +705,6 @@ static void rx_task_GPS(void *arg)
                 } else {
                     ESP_LOGI(RX_TASK_TAG, "GPS is NOT locked yet. Searching for satellites...");
                 }
-            }
-
-            if(connect_logic_get_state() == PROTOCOL_CONNECTED && is_current_gps_data_valid()){
-                gps_push_data();
             }
         }
         // 如果没有数据读取，休眠一小段时间，避免任务占用 CPU
